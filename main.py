@@ -132,9 +132,10 @@ def start_screen():
 
 
 def play():
+    font = pygame.font.Font(None, 30)
+
     def display():
         screen.fill((0, 0, 0))
-        font = pygame.font.Font(None, 30)
         for r in range(rows):
             for c in range(cols):
                 if state[r][c] == 'open':
@@ -156,7 +157,8 @@ def play():
         pygame.display.flip()
 
     def open_cell(r, c):
-        nonlocal player_lost, playing
+        nonlocal closed_cells, player_lost, playing
+        closed_cells -= 1
         if state[r][c] == 'none':
             state[r][c] = 'open'
             if MS.MSGrid[r][c] == 'B':
@@ -167,12 +169,19 @@ def play():
                     for c1 in range(max(c - 1, 0), min(c + 2, cols)):
                         open_cell(r1, c1)
 
+    def gen_grid():
+        MS.SetMSGrid()
+        MS.PlaceMines()
+        MS.PlaceNumbers()
+        for r in range(rows):
+            for c in range(cols):
+                if MS.MSGrid[r][c] == 0:
+                    MS.MSGrid[r][c] = ' '
+
     rows, cols, mines = 14, 18, 40
     closed_cells = rows * cols
     MS = MineSweeper(cols, rows, mines)
-    MS.SetMSGrid()
-    MS.PlaceMines()
-    MS.PlaceNumbers()
+    gen_grid()
     state = [['none'] * cols for _ in range(rows)]
     upper = 100
     left = 10
@@ -196,13 +205,25 @@ def play():
                 else:
                     if closed_cells == rows * cols:
                         while MS.MSGrid[r][c] != ' ':
-                            MS.SetMSGrid()
-                            MS.PlaceMines()
-                            MS.PlaceNumbers()
+                            gen_grid()
                     open_cell(r, c)
                     if closed_cells == mines:
                         playing = False
             display()
+
+    string1_rendered = font.render(f"Вы {'вы' if player_lost else 'про'}играли!",
+                                   1, pygame.Color('white'))
+    text1_rect = string1_rendered.get_rect()
+    text1_rect.top = 10
+    text1_rect.x = 10
+    screen.blit(string1_rendered, text1_rect)
+    string2_rendered = font.render('Нажмите, чтобы играть снова',
+                                   1, pygame.Color('white'))
+    text2_rect = string2_rendered.get_rect()
+    text2_rect.top = 20
+    text2_rect.x = 10
+    screen.blit(string2_rendered, text2_rect)
+    print('game over')
 
 
 pygame.init()
