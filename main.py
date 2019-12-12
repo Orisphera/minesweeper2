@@ -128,25 +128,92 @@ def start_screen():
         intro_rect.x = 10
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
-
-    while True:
-        event = pygame.event.wait()
-        if event.type == pygame.QUIT:
-            terminate()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            pass
+    pygame.display.flip()
 
 
 def play():
-    while True:
+    def display():
+        screen.fill((0, 0, 0))
+        font = pygame.font.Font(None, 30)
+        for r in range(rows):
+            for c in range(cols):
+                if state[r][c] == 'open':
+                    ch = str(MS.MSGrid[r][c])
+                elif state[r][c] == 'flag':
+                    if player_lost and MS.MSGrid[r][c] != 'B':
+                        ch = 'X'
+                    else:
+                        ch = 'F'
+                elif player_lost and MS.MSGrid[r][c] == 'B':
+                    ch = 'O'
+                else:
+                    ch = '#'
+                string_rendered = font.render(ch, 1, pygame.Color('white'))
+                text_rect = string_rendered.get_rect()
+                text_rect.top = upper + cell * r
+                text_rect.x = left + cell * c
+                screen.blit(string_rendered, text_rect)
+        pygame.display.flip()
+
+    def open_cell(r, c):
+        nonlocal player_lost, playing
+        if state[r][c] == 'none':
+            state[r][c] = 'open'
+            if MS.MSGrid[r][c] == 'B':
+                player_lost = True
+                playing = False
+            elif MS.MSGrid[r][c] == ' ':
+                for r1 in range(max(r - 1, 0), min(r + 2, rows)):
+                    for c1 in range(max(c - 1, 0), min(c + 2, cols)):
+                        open_cell(r1, c1)
+
+    rows, cols, mines = 14, 18, 40
+    closed_cells = rows * cols
+    MS = MineSweeper(cols, rows, mines)
+    MS.SetMSGrid()
+    MS.PlaceMines()
+    MS.PlaceNumbers()
+    state = [['none'] * cols for _ in range(rows)]
+    upper = 100
+    left = 10
+    cell = 20
+    player_lost = False
+    playing = True
+    display()
+    while playing:
         event = pygame.event.wait()
         if event.type == pygame.QUIT:
             terminate()
-        pygame.display.flip()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = event.pos
+            r, c = (y - upper) // cell, (x - left) // cell
+            if 0 <= r < rows and 0 <= c < cols:
+                if event.button == 3:
+                    if state[r][c] == 'none':
+                        state[r][c] = 'flag'
+                    elif state[r][c] == 'flag':
+                        state[r][c] = 'none'
+                else:
+                    if closed_cells == rows * cols:
+                        while MS.MSGrid[r][c] != ' ':
+                            MS.SetMSGrid()
+                            MS.PlaceMines()
+                            MS.PlaceNumbers()
+                    open_cell(r, c)
+                    if closed_cells == mines:
+                        playing = False
+            display()
 
 
 pygame.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
 start_screen()
-play()
+while True:
+    while True:
+        event = pygame.event.wait()
+        if event.type == pygame.QUIT:
+            terminate()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            break
+    play()
