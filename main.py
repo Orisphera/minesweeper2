@@ -140,16 +140,25 @@ def play():
             for c in range(cols):
                 if state[r][c] == 'open':
                     ch = str(MS.MSGrid[r][c])
+                    if ch == 'B':
+                        color = 255, 0, 0
+                    elif ch == ' ':
+                        color = 255, 255, 0
+                    else:
+                        color = 255, 256 - int(ch) * 32, 0
                 elif state[r][c] == 'flag':
                     if player_lost and MS.MSGrid[r][c] != 'B':
                         ch = 'X'
                     else:
                         ch = 'F'
+                    color = 255, 0, 0
                 elif player_lost and MS.MSGrid[r][c] == 'B':
                     ch = 'O'
+                    color = 255, 0, 0
                 else:
                     ch = '#'
-                string_rendered = font.render(ch, 1, pygame.Color('white'))
+                    color = 0, 255, 0
+                string_rendered = font.render(ch, 1, color)
                 text_rect = string_rendered.get_rect()
                 text_rect.top = upper + cell * r
                 text_rect.x = left + cell * c
