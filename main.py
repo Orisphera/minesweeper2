@@ -43,6 +43,8 @@ class MineSweeper():
                     self.grid[r][c] = self.number_to_char(self.sur_mines(r, c))
 
     def move(self, r, c):
+        if self.game_over:
+            return
         if self.grid is None:
             self.setgrid()
             for r1, c1 in self.sur_cells(r, c):
@@ -179,14 +181,26 @@ def play():
             r, c = (y - upper) // cell, (x - left) // cell
             if 0 <= r < rows and 0 <= c < cols:
                 if event.button == 3:
-                    if state[r][c] == 'none':
-                        state[r][c] = 'flag'
-                        marked_cells += 1
-                    elif state[r][c] == 'flag':
-                        state[r][c] = 'none'
-                        marked_cells -= 1
+                    if not ms.open[r][c]:
+                        if state[r][c] == 'none':
+                            state[r][c] = 'flag'
+                            marked_cells += 1
+                        elif state[r][c] == 'flag':
+                            state[r][c] = 'none'
+                            marked_cells -= 1
                 else:
-                    ms.move(r, c)
+                    if state[r][c] == 'none':
+                        if ms.open[r][c] and ms.grid[r][c].isdigit():
+                            remaining_mines = int(ms.grid[r][c])
+                            for r1, c1 in ms.sur_cells(r, c):
+                                if state[r1][c1] == 'flag':
+                                    remaining_mines -= 1
+                            if not remaining_mines:
+                                for r1, c1 in ms.sur_cells(r, c):
+                                    if state[r1][c1] != 'flag':
+                                        ms.move(r1, c1)
+                                        state[r1][c1] = 'none'
+                        ms.move(r, c)
             display()
 
 
