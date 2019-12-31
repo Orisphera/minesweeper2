@@ -3,111 +3,91 @@ import random
 import sys
 
 
-# By Uee
-class MineSweeper(object):
-    # Columns And Rows Variables
-    Columns, Rows = 0, 0
-    # Number of Mines Variable
-    NoOfMines = 0
+# Based on MineSweeper by Uee
+class MineSweeper():
     # Mine Sweeper Grid Variable
     MSGrid = None
-    # Random Integer Variable
-    RandInt = random.randint
 
     # CONSTRUCTOR
-    def __init__(self, Columns=9, Rows=9, NoOfMines=10):
-        self.Columns = Columns
-        self.Rows = Rows
-        self.NoOfMines = NoOfMines
+    def __init__(self, cols=9, rows=9, mines=10):
+        self.cols = cols
+        self.rows = rows
+        self.mines = mines
+        self.grid = None
+        self.open = [[False] * self.cols for _ in range(self.rows)]
+        self.closed_count = rows * cols
+        self.game_over = False
+        self.player_won = None
 
     # MINE SWEEPER FUNCTIONS
     # 'B' -> Bomb
-    def PlaceMines(self, Char='B'):
+    def place_mines(self):
         i = 0
-        while i != self.NoOfMines:
-            x = self.RandInt(0,
-                             self.Columns - 1)
-            y = self.RandInt(0, self.Rows -
-                             1)
+        while i != self.mines:
+            x = random.randint(0, self.cols - 1)
+            y = random.randint(0, self.rows - 1)
 
-            if (self.MSGrid[y][x] == Char):
+            if self.grid[y][x] == 'B':
                 continue
             else:
-                self.MSGrid[y][x] = Char
+                self.grid[y][x] = 'B'
                 i += 1
 
     # Checks The 8 Surrounding Blocks Around The Middle Tile - MSGrid[y][x],
     # And Count The Number Of Mines Found Around It. The Number Found Will Replace The Middle Tile -
     # MSGrid[y][x] Original Value.
-    def PlaceNumbers(self):
-        for r in range(0, self.Rows):
-            for c in range(0,
-                           self.Columns):
-                if (self.MSGrid[r][c] ==
-                        'B' or
-                        str.isdigit(self.MSGrid[r]
-                                    [c])):
-                    continue
-                else:
-                    self.MSGrid[r][c] = \
-                        self.NoOfSurMines(r, c)
+    def place_numbers(self):
+        for r in range(0, self.rows):
+            for c in range(0, self.cols):
+                if self.grid[r][c] == '#':
+                    self.grid[r][c] = self.number_to_char(self.sur_mines(r, c))
+
+    def move(self, r, c):
+        if self.grid is None:
+            self.setgrid()
+            for r1, c1 in self.sur_cells(r, c):
+                self.grid[r1][c1] = 'B'
+            self.place_mines()
+            for r1, c1 in self.sur_cells(r, c):
+                self.grid[r1][c1] = '#'
+            self.place_numbers()
+        if self.open[r][c]:
+            return
+        self.open[r][c] = True
+        self.closed_count -= 1
+        if self.grid[r][c] == ' ':
+            for r1, c1 in self.sur_cells(r, c):
+                self.move(r1, c1)
+        elif self.grid[r][c] == 'B':
+            self.player_won = False
+            self.game_over = True
+
+    def check_win(self):
+        if self.closed_count == self.mines:
+            self.player_won = True
+            self.game_over = True
 
     # HELPER FUNCTIONS
     # Determine The Number Of Surrounding Mines/Bombs Around The Given Point X, Y
-    def NoOfSurMines(self, y=0, x=0):
-        return self.Left(x - 1, y) + \
-               self.Right(x + 1, y) + self.Up(x, y
-                                              + 1) + self.Down(x, y - 1) + \
-               self.TopRight(x + 1, y + 1) + \
-               self.BottomRight(x + 1, y - 1) + \
-               self.TopLeft(x - 1, y + 1) + \
-               self.BottomLeft(x - 1, y - 1)
 
-    # Check The Block Left Of The Middle Tile
-    def Left(self, x=0, y=0):
-        return 0 if (x < 0 or self.MSGrid[y][x] != 'B') else 1
+    def sur_cells(self, r, c):
+        for r1 in range(max(r - 1, 0), min(r + 2, self.rows)):
+            for c1 in range(max(c - 1, 0), min(c + 2, self.cols)):
+                yield r1, c1
 
-    # Check The Block Right Of The Middle Tile
-    def Right(self, x=0, y=0):
-        return 0 if (x >= self.Columns or self.MSGrid[y][x] != 'B') else 1
+    def sur_mines(self, r, c):
+        ans = 0
+        for r1, c1 in self.sur_cells(r, c):
+            if self.grid[r1][c1] == 'B':
+                ans += 1
+        return ans
 
-    # Check The Block Above The Middle Tile
-    def Up(self, x=0, y=0):
-        return 0 if (y >= self.Rows or self.MSGrid[y][x] != 'B') else 1
-
-    # Check The Block Below The Middle Tile
-    def Down(self, x=0, y=0):
-        return 0 if (y < 0 or self.MSGrid[y][x] != 'B') else 1
-
-    # Check The Top Right Block From The Middle Tile
-    def TopRight(self, x=0, y=0):
-        return 0 if (x >= self.Columns or y >= self.Rows or self.MSGrid[y][x] != 'B') else 1
-
-    # Check The Bottom Right Block From The Middle Tile
-    def BottomRight(self, x=0, y=0):
-        return 0 if (x >= self.Columns or y < 0 or self.MSGrid[y][x] != 'B') else 1
-
-    # Check The Top Left Block From The Middle Tile
-    def TopLeft(self, x=0, y=0):
-        return 0 if (x < 0 or y >= self.Rows or self.MSGrid[y][x] != 'B') else 1
-
-    # Check The Bottom Left Block From The Middle Block
-    def BottomLeft(self, x=0, y=0):
-        return 0 if (x < 0 or y < 0 or
-                     self.MSGrid[y][x] != 'B') else 1
-
-    # Display The Mine Sweeper Grid
-    def DisplayGrid(self):
-        line = ""
-        for r in range(0, self.Rows):
-            for c in range(0, self.Columns):
-                line += str(self.MSGrid[r][c]) + " "
-            print(line)
-            line = ""
+    def number_to_char(self, num):
+        return str(num) if num else ' '
 
     # GETTER'S AND SETTER'S
-    def SetMSGrid(self, Char='#'):
-        self.MSGrid = [[Char for i in range(self.Columns)] for i in range(self.Rows)]
+    def setgrid(self):
+        self.grid = [['#' for i in range(self.cols)] for i in range(self.rows)]
 
 
 def terminate():
@@ -138,8 +118,8 @@ def play():
         screen.fill((0, 0, 0))
         for r in range(rows):
             for c in range(cols):
-                if state[r][c] == 'open':
-                    ch = str(MS.MSGrid[r][c])
+                if ms.open[r][c]:
+                    ch = ms.grid[r][c]
                     if ch == 'B':
                         color = 255, 0, 0
                     elif ch == ' ':
@@ -147,12 +127,12 @@ def play():
                     else:
                         color = 255, 256 - int(ch) * 32, 0
                 elif state[r][c] == 'flag':
-                    if player_lost and MS.MSGrid[r][c] != 'B':
+                    if ms.game_over and ms.grid[r][c] != 'B':
                         ch = 'X'
                     else:
                         ch = 'F'
                     color = 255, 0, 0
-                elif player_lost and MS.MSGrid[r][c] == 'B':
+                elif ms.game_over and ms.grid[r][c] == 'B':
                     ch = 'O'
                     color = 255, 0, 0
                 else:
@@ -163,12 +143,12 @@ def play():
                 text_rect.top = upper + cell * r
                 text_rect.x = left + cell * c
                 screen.blit(string_rendered, text_rect)
-        if playing:
+        if ms.game_over:
+            string1 = f"Вы {'вы' if ms.player_won else 'про'}играли!"
+            string2 = 'Нажмите, чтобы играть снова'
+        else:
             string1 = f'Мин: {mines}'
             string2 = f'Помеченых клеток: {marked_cells}'
-        else:
-            string1 = f"Вы {'про' if player_lost else 'вы'}играли!"
-            string2 = 'Нажмите, чтобы играть снова'
         string1_rendered = font.render(string1, 1, pygame.Color('white'))
         text1_rect = string1_rendered.get_rect()
         text1_rect.top = 10
@@ -181,41 +161,16 @@ def play():
         screen.blit(string2_rendered, text2_rect)
         pygame.display.flip()
 
-    def open_cell(r, c):
-        nonlocal closed_cells, player_lost, playing
-        closed_cells -= 1
-        if state[r][c] == 'none':
-            state[r][c] = 'open'
-            if MS.MSGrid[r][c] == 'B':
-                player_lost = True
-                playing = False
-            elif MS.MSGrid[r][c] == ' ':
-                for r1 in range(max(r - 1, 0), min(r + 2, rows)):
-                    for c1 in range(max(c - 1, 0), min(c + 2, cols)):
-                        open_cell(r1, c1)
-
-    def gen_grid():
-        MS.SetMSGrid()
-        MS.PlaceMines()
-        MS.PlaceNumbers()
-        for r in range(rows):
-            for c in range(cols):
-                if MS.MSGrid[r][c] == 0:
-                    MS.MSGrid[r][c] = ' '
-
     rows, cols, mines = 14, 18, 40
     closed_cells = rows * cols
     marked_cells = 0
-    MS = MineSweeper(cols, rows, mines)
-    gen_grid()
+    ms = MineSweeper(cols, rows, mines)
     state = [['none'] * cols for _ in range(rows)]
     upper = 100
     left = 10
     cell = 20
-    player_lost = False
-    playing = True
     display()
-    while playing:
+    while not ms.game_over:
         event = pygame.event.wait()
         if event.type == pygame.QUIT:
             terminate()
@@ -231,12 +186,7 @@ def play():
                         state[r][c] = 'none'
                         marked_cells -= 1
                 else:
-                    if closed_cells == rows * cols:
-                        while MS.MSGrid[r][c] != ' ':
-                            gen_grid()
-                    open_cell(r, c)
-                    if closed_cells == mines:
-                        playing = False
+                    ms.move(r, c)
             display()
 
 
