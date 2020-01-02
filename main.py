@@ -17,10 +17,7 @@ def load_image(name, color_key=None):
 
 
 # Based on MineSweeper by Uee
-class MineSweeper():
-    # Mine Sweeper Grid Variable
-    MSGrid = None
-
+class MineSweeper:
     # CONSTRUCTOR
     def __init__(self, cols=9, rows=9, mines=10):
         self.cols = cols
@@ -59,7 +56,7 @@ class MineSweeper():
         if self.game_over:
             return
         if self.grid is None:
-            self.setgrid()
+            self.set_grid()
             for r1, c1 in self.sur_cells(r, c):
                 self.grid[r1][c1] = 'B'
             self.place_mines()
@@ -97,12 +94,13 @@ class MineSweeper():
                 ans += 1
         return ans
 
-    def number_to_char(self, num):
+    @staticmethod
+    def number_to_char(num):
         return str(num) if num else ' '
 
     # GETTER'S AND SETTER'S
-    def setgrid(self):
-        self.grid = [['#' for i in range(self.cols)] for i in range(self.rows)]
+    def set_grid(self):
+        self.grid = [['#' for _ in range(self.cols)] for _ in range(self.rows)]
 
 
 def terminate():
@@ -124,6 +122,15 @@ def start_screen():
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
     pygame.display.flip()
+
+
+def wait():
+    while True:
+        event = pygame.event.wait()
+        if event.type == pygame.QUIT:
+            terminate()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            break
 
 
 def play():
@@ -198,7 +205,6 @@ def play():
         pygame.display.flip()
 
     rows, cols, mines = 14, 18, 40
-    closed_cells = rows * cols
     marked_cells = 0
     ms = MineSweeper(cols, rows, mines)
     state = [['none'] * cols for _ in range(rows)]
@@ -243,10 +249,5 @@ size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
 start_screen()
 while True:
-    while True:
-        event = pygame.event.wait()
-        if event.type == pygame.QUIT:
-            terminate()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            break
+    wait()
     play()
