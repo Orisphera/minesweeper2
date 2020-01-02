@@ -1,6 +1,19 @@
+import os
 import pygame
 import random
 import sys
+
+
+def load_image(name, color_key=None):
+    fullname = os.path.join('data', name)
+    image = pygame.image.load(fullname).convert()
+    if color_key is not None:
+        if color_key == -1:
+            color_key = image.get_at((0, 0))
+        image.set_colorkey(color_key)
+    else:
+        image = image.convert_alpha()
+    return image
 
 
 # Based on MineSweeper by Uee
@@ -120,31 +133,52 @@ def play():
         screen.fill((0, 0, 0))
         for r in range(rows):
             for c in range(cols):
+                text = ' '
+                text_color = 0, 0, 0
                 if ms.open[r][c]:
                     ch = ms.grid[r][c]
                     if ch == 'B':
-                        color = 255, 0, 0
-                    elif ch == ' ':
-                        color = 255, 255, 0
+                        bg_color = 255, 0, 0
+                        im_name = 'bomb.png'
                     else:
-                        color = 255, 256 - int(ch) * 32, 0
-                elif state[r][c] == 'flag':
-                    if ms.game_over and ms.grid[r][c] != 'B':
-                        ch = 'X'
-                    else:
-                        ch = 'F'
-                    color = 255, 0, 0
-                elif ms.game_over and ms.grid[r][c] == 'B':
-                    ch = 'O'
-                    color = 255, 0, 0
+                        bg_color = (215, 184, 153) if (r + c) % 2 else (229, 194, 159)
+                        if ch == ' ':
+                            im_name = None
+                        else:
+                            im_name = None
+                            text = ch
+                            text_color = ((0, 0, 0),
+                                          (0, 0, 255),
+                                          (0, 255, 0),
+                                          (255, 0, 0),
+                                          (64, 0, 128),
+                                          (128, 255, 0),
+                                          (255, 255, 0),
+                                          (255, 128, 0),
+                                          (255, 0, 0))[int(ch)]
                 else:
-                    ch = '#'
-                    color = 0, 255, 0
-                string_rendered = font.render(ch, 1, color)
-                text_rect = string_rendered.get_rect()
-                text_rect.top = upper + cell * r
-                text_rect.x = left + cell * c
-                screen.blit(string_rendered, text_rect)
+                    bg_color = (162, 209, 73) if (r + c) % 2 else (170, 215, 81)
+                    if state[r][c] == 'flag':
+                        if ms.game_over and ms.grid[r][c] != 'B':
+                            im_name = 'cross.png'
+                        else:
+                            im_name = 'flag.png'
+                    elif ms.game_over and ms.grid[r][c] == 'B':
+                        im_name = 'bomb.png'
+                    else:
+                        im_name = None
+                pygame.draw.rect(screen, bg_color, (left + cell * c, upper + cell * r, cell, cell))
+                if im_name is not None:
+                    image = pygame.transform.scale(load_image(im_name, -1), (cell, cell))
+                    im_rect = image.get_rect()
+                    im_rect.top = upper + cell * r
+                    im_rect.x = left + cell * c
+                    screen.blit(image, im_rect)
+                text_rendered = font.render(text, 1, text_color)
+                text_rect = text_rendered.get_rect()
+                text_rect.top = upper + cell * r + (cell - text_rect.height) // 2
+                text_rect.x = left + cell * c + (cell - text_rect.width) // 2
+                screen.blit(text_rendered, text_rect)
         if ms.game_over:
             string1 = f"Вы {'вы' if ms.player_won else 'про'}играли!"
             string2 = 'Нажмите, чтобы играть снова'
