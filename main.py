@@ -28,6 +28,8 @@ class MineSweeper:
         self.closed_count = rows * cols
         self.game_over = False
         self.player_won = None
+        self.flagged = [[False] * self.cols for _ in range(self.rows)]
+        self.flag_count = 0
 
     # MINE SWEEPER FUNCTIONS
     # 'B' -> Bomb
@@ -55,6 +57,8 @@ class MineSweeper:
     def move(self, r, c):
         if self.game_over:
             return
+        if self.flagged[r][c]:
+            return
         if self.grid is None:
             self.set_grid()
             for r1, c1 in self.sur_cells(r, c):
@@ -69,10 +73,33 @@ class MineSweeper:
         self.closed_count -= 1
         if self.grid[r][c] == ' ':
             for r1, c1 in self.sur_cells(r, c):
+                self.flagged[r1][c1] = False
                 self.move(r1, c1)
         elif self.grid[r][c] == 'B':
             self.player_won = False
             self.game_over = True
+
+    def flag(self, r, c):
+        if self.open[r][c]:
+            return
+        if self.flagged[r][c]:
+            self.flagged[r][c] = False
+            self.flag_count -= 1
+        else:
+            self.flagged[r][c] = True
+            self.flag_count += 1
+
+    def move_nearby(self, r, c):
+        if not self.open[r][c]:
+            return
+        remaining_mines = int(self.grid[r][c])
+        for r1, c1 in self.sur_cells(r, c):
+            if self.flagged[r1][c1]:
+                remaining_mines -= 1
+        if not remaining_mines:
+            for r1, c1 in self.sur_cells(r, c):
+                if not self.flagged[r1][c1]:
+                    self.move(r1, c1)
 
     def check_win(self):
         if self.closed_count == self.mines:
@@ -165,7 +192,7 @@ def play():
                                           (255, 0, 0))[int(ch)]
                 else:
                     bg_color = (162, 209, 73) if (r + c) % 2 else (170, 215, 81)
-                    if state[r][c] == 'flag':
+                    if ms.flagged[r][c]:
                         if ms.game_over and ms.grid[r][c] != 'B':
                             im_name = 'cross.png'
                         else:
@@ -191,7 +218,7 @@ def play():
                     'Нажмите, чтобы играть снова'
         else:
             text = (f'Мин: {mines}',
-                    f'Помеченых клеток: {marked_cells}')
+                    f'Помеченых клеток: {ms.flag_count}')
         text_coord = 10
         for string in text:
             string_rendered = font.render(string, 1, pygame.Color('white'))
@@ -203,9 +230,7 @@ def play():
         pygame.display.flip()
 
     rows, cols, mines = 14, 18, 40
-    marked_cells = 0
     ms = MineSweeper(cols, rows, mines)
-    state = [['none'] * cols for _ in range(rows)]
     upper = 100
     left = 10
     cell = 20
@@ -219,26 +244,10 @@ def play():
             r, c = (y - upper) // cell, (x - left) // cell
             if 0 <= r < rows and 0 <= c < cols:
                 if event.button == 3:
-                    if not ms.open[r][c]:
-                        if state[r][c] == 'none':
-                            state[r][c] = 'flag'
-                            marked_cells += 1
-                        elif state[r][c] == 'flag':
-                            state[r][c] = 'none'
-                            marked_cells -= 1
+                    ms.flag(r, c)
                 else:
-                    if state[r][c] == 'none':
-                        if ms.open[r][c] and ms.grid[r][c].isdigit():
-                            remaining_mines = int(ms.grid[r][c])
-                            for r1, c1 in ms.sur_cells(r, c):
-                                if state[r1][c1] == 'flag':
-                                    remaining_mines -= 1
-                            if not remaining_mines:
-                                for r1, c1 in ms.sur_cells(r, c):
-                                    if state[r1][c1] != 'flag':
-                                        ms.move(r1, c1)
-                                        state[r1][c1] = 'none'
-                        ms.move(r, c)
+                    ms.move_nearby(r, c)
+                    ms.move(r, c)
             display()
 
 
