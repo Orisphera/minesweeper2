@@ -2,6 +2,7 @@ import os
 import pygame
 import random
 import sys
+import time
 
 
 def load_image(name, color_key=None):
@@ -30,6 +31,8 @@ class MineSweeper:
         self.player_won = None
         self.flagged = [[False] * self.cols for _ in range(self.rows)]
         self.flag_count = 0
+        self.start_time = None
+        self.time = None
 
     # MINE SWEEPER FUNCTIONS
     # 'B' -> Bomb
@@ -67,6 +70,7 @@ class MineSweeper:
             for r1, c1 in self.sur_cells(r, c):
                 self.grid[r1][c1] = '#'
             self.place_numbers()
+            self.start_time = time.time()
         if self.open[r][c]:
             return
         self.open[r][c] = True
@@ -103,6 +107,7 @@ class MineSweeper:
 
     def check_win(self):
         if self.closed_count == self.mines:
+            self.time = self.get_time()
             self.player_won = True
             self.game_over = True
 
@@ -125,7 +130,9 @@ class MineSweeper:
     def number_to_char(num):
         return str(num) if num else ' '
 
-    # GETTER'S AND SETTER'S
+    def get_time(self):
+        return 0 if self.start_time is None else time.time() - self.start_time
+
     def set_grid(self):
         self.grid = [['#' for _ in range(self.cols)] for _ in range(self.rows)]
 
@@ -213,12 +220,16 @@ def play():
                 text_rect.top = upper + cell * r + (cell - text_rect.height) // 2
                 text_rect.x = left + cell * c + (cell - text_rect.width) // 2
                 screen.blit(text_rendered, text_rect)
-        if ms.game_over:
-            text = f"Вы {'вы' if ms.player_won else 'про'}играли!", \
-                    'Нажмите, чтобы играть снова'
-        else:
+        if not ms.game_over:
             text = (f'Мин: {mines}',
-                    f'Помеченых клеток: {ms.flag_count}')
+                    f'Помеченых клеток: {ms.flag_count}',
+                    f'Время: {int(ms.get_time())} с')
+        elif ms.player_won:
+            text = (f"Вы выиграли! Время: {ms.time} с",
+                    'Нажмите, чтобы играть снова')
+        else:
+            text = ("Вы проиграли!",
+                    'Нажмите, чтобы играть снова')
         text_coord = 10
         for string in text:
             string_rendered = font.render(string, 1, pygame.Color('white'))
@@ -229,6 +240,17 @@ def play():
             text_coord += 20
         pygame.display.flip()
 
+    def on_mouse_button_down():
+        x, y = event.pos
+        r, c = (y - upper) // cell, (x - left) // cell
+        if 0 <= r < rows and 0 <= c < cols:
+            if event.button == 3:
+                ms.flag(r, c)
+            else:
+                ms.move_nearby(r, c)
+                ms.move(r, c)
+                ms.check_win()
+
     rows, cols, mines = 14, 18, 40
     ms = MineSweeper(cols, rows, mines)
     upper = 100
@@ -236,19 +258,12 @@ def play():
     cell = 20
     display()
     while not ms.game_over:
-        event = pygame.event.wait()
-        if event.type == pygame.QUIT:
-            terminate()
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = event.pos
-            r, c = (y - upper) // cell, (x - left) // cell
-            if 0 <= r < rows and 0 <= c < cols:
-                if event.button == 3:
-                    ms.flag(r, c)
-                else:
-                    ms.move_nearby(r, c)
-                    ms.move(r, c)
-            display()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                on_mouse_button_down()
+        display()
 
 
 pygame.init()
