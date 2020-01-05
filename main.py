@@ -187,21 +187,19 @@ def play():
                 text_rect.x = left + cell * c + (cell - text_rect.width) // 2
                 screen.blit(text_rendered, text_rect)
         if ms.game_over:
-            string1 = f"Вы {'вы' if ms.player_won else 'про'}играли!"
-            string2 = 'Нажмите, чтобы играть снова'
+            text = f"Вы {'вы' if ms.player_won else 'про'}играли!", \
+                    'Нажмите, чтобы играть снова'
         else:
-            string1 = f'Мин: {mines}'
-            string2 = f'Помеченых клеток: {marked_cells}'
-        string1_rendered = font.render(string1, 1, pygame.Color('white'))
-        text1_rect = string1_rendered.get_rect()
-        text1_rect.top = 10
-        text1_rect.x = 10
-        screen.blit(string1_rendered, text1_rect)
-        string2_rendered = font.render(string2, 1, pygame.Color('white'))
-        text2_rect = string2_rendered.get_rect()
-        text2_rect.top = 30
-        text2_rect.x = 10
-        screen.blit(string2_rendered, text2_rect)
+            text = (f'Мин: {mines}',
+                    f'Помеченых клеток: {marked_cells}')
+        text_coord = 10
+        for string in text:
+            string_rendered = font.render(string, 1, pygame.Color('white'))
+            string_rect = string_rendered.get_rect()
+            string_rect.top = text_coord
+            string_rect.x = 10
+            screen.blit(string_rendered, string_rect)
+            text_coord += 20
         pygame.display.flip()
 
     rows, cols, mines = 14, 18, 40
