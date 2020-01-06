@@ -143,10 +143,12 @@ def terminate():
 
 
 def start_screen():
+    screen.fill((0, 0, 0))
     with open('intro.txt') as f:
-        intro_text = f.read().split('\n')
+        intro_text = f.read().rstrip('\n').split('\n')
     font = pygame.font.Font(None, 30)
     text_coord = 50
+    text_rects = []
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
@@ -155,19 +157,23 @@ def start_screen():
         intro_rect.x = 10
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
+        text_rects.append(intro_rect)
     pygame.display.flip()
-
-
-def wait():
     while True:
         event = pygame.event.wait()
         if event.type == pygame.QUIT:
             terminate()
         if event.type == pygame.MOUSEBUTTONDOWN:
-            break
+            x, y = event.pos
+            for rect, ans in zip(text_rects[-3:], (('easy', 10, 8, 10),
+                                                   ('medium', 18, 14, 40),
+                                                   ('hard', 24, 20, 99))):
+                if rect.top <= y <= rect.top + rect.height and \
+                    rect.x <= x <= rect.x + rect.width:
+                    return ans
 
 
-def play():
+def play(diff_id, cols, rows, mines):
     font = pygame.font.Font(None, 30)
 
     def display():
@@ -251,7 +257,6 @@ def play():
                 ms.move(r, c)
                 ms.check_win()
 
-    rows, cols, mines = 14, 18, 40
     ms = MineSweeper(cols, rows, mines)
     upper = 100
     left = 10
@@ -264,12 +269,16 @@ def play():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 on_mouse_button_down()
         display()
+    while True:
+        event = pygame.event.wait()
+        if event.type == pygame.QUIT:
+            terminate()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            return
 
 
 pygame.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
-start_screen()
 while True:
-    wait()
-    play()
+    play(*start_screen())
