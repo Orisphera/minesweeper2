@@ -1,6 +1,7 @@
 import os
 import pygame
 import random
+import sqlite3
 import sys
 import time
 
@@ -96,6 +97,8 @@ class MineSweeper:
     def move_nearby(self, r, c):
         if not self.open[r][c]:
             return
+        if self.grid[r][c] == ' ':
+            return
         remaining_mines = int(self.grid[r][c])
         for r1, c1 in self.sur_cells(r, c):
             if self.flagged[r1][c1]:
@@ -146,7 +149,6 @@ def start_screen():
     screen.fill((0, 0, 0))
     with open('intro.txt') as f:
         intro_text = f.read().rstrip('\n').split('\n')
-    font = pygame.font.Font(None, 30)
     text_coord = 50
     text_rects = []
     for line in intro_text:
@@ -169,12 +171,11 @@ def start_screen():
                                                    ('medium', 18, 14, 40),
                                                    ('hard', 24, 20, 99))):
                 if rect.top <= y <= rect.top + rect.height and \
-                    rect.x <= x <= rect.x + rect.width:
+                        rect.x <= x <= rect.x + rect.width:
                     return ans
 
 
 def play(diff_id, cols, rows, mines):
-    font = pygame.font.Font(None, 30)
 
     def display():
         screen.fill((0, 0, 0))
@@ -232,7 +233,7 @@ def play(diff_id, cols, rows, mines):
                     f'Время: {int(ms.get_time())} с')
         elif ms.player_won:
             text = (f"Вы выиграли! Время: {ms.time} с",
-                    'Нажмите, чтобы играть снова')
+                    'Нажмите для продолжения')
         else:
             text = ("Вы проиграли!",
                     'Нажмите, чтобы играть снова')
@@ -274,11 +275,51 @@ def play(diff_id, cols, rows, mines):
         if event.type == pygame.QUIT:
             terminate()
         if event.type == pygame.MOUSEBUTTONDOWN:
-            return
+            break
+    if ms.player_won:
+        record(diff_id, ms.time)
+
+
+def record(diff_id, new_time):
+    con = sqlite3.connect('records.db')
+    cur = con.cursor()
+    cur.execute('CREATE TABLE IF NOT EXISTS records ('
+                ' difficulty TEXT,'
+                ' name TEXT,'
+                ' time REAL)')
+    if cur.execute(f'SELECT time FROM records'
+                   f' WHERE difficulty = "{diff_id}"'
+                   f' AND time >= {new_time}').fetchall():
+        return
+    name = ''
+    while True:
+        screen.fill((0, 0, 0))
+        text = f'Введите имя для таблицы рекордов: {name}'
+        text_rendered = font.render(text, 1, (255, 255, 255))
+        text_rect = text_rendered.get_rect()
+        text_rect.top = 100
+        text_rect.x = 10
+        screen.blit(text_rendered, text_rect)
+        pygame.display.flip()
+        event = pygame.event.wait()
+        if event.type == pygame.QUIT:
+            terminate()
+        elif event.type == pygame.KEYDOWN:
+            key = event.key
+            if key == pygame.K_BACKSPACE:
+                name = name[:-1]
+            elif key == pygame.K_RETURN:
+                break
+            else:
+                key_name = pygame.key.name(key)
+                name += key_name
+    cur.execute(f'INSERT INTO records(diff_id, name, time)'
+                f' VALUES({diff_id}, {name}, {new_time})')
 
 
 pygame.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
+font = pygame.font.Font(None, 30)
 while True:
     play(*start_screen())
