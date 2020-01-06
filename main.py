@@ -78,7 +78,9 @@ class MineSweeper:
         self.closed_count -= 1
         if self.grid[r][c] == ' ':
             for r1, c1 in self.sur_cells(r, c):
-                self.flagged[r1][c1] = False
+                if self.flagged[r1][c1]:
+                    self.flagged[r1][c1] = False
+                    self.flag_count -= 1
                 self.move(r1, c1)
         elif self.grid[r][c] == 'B':
             self.player_won = False
